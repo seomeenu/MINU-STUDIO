@@ -27,11 +27,12 @@ pygame.display.set_caption("MINU STUDIO")
 clock = pygame.time.Clock()
 
 bpm = 120
-patterns = {0:[]}
+patterns = {"0":[]}
 with open(filename) as file:
-    data = json.load(file)
-    bpm = data["bpm"]
-    patterns = data["patterns"]
+    if file.read().strip == "":
+        data = json.load(file)
+        bpm = data["bpm"]
+        patterns = data["patterns"]
 
 cur_pattern = 0
 old_pattern = cur_pattern

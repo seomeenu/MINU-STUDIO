@@ -1,13 +1,11 @@
 #pallette
 #https://lospec.com/palette-list/sweetie-16
 
-#ctrl z 쉬프트 무빙
-
 import pygame
 import sys
 import json
 import copy
-import numpy as np
+import time
 import tkinter as tk
 from tkinter import filedialog
 
@@ -60,6 +58,7 @@ class Sound:
         self.sound = pygame.mixer.Sound(src)
         self.volume = volume
         self.sound.set_volume(self.volume * global_volume)
+        self.play_time = time.time()
         
     def play(self):
         self.sound.stop()
@@ -81,7 +80,7 @@ for i in range(1, 4+1):
 
 metronome_sounds = []
 for i in range(1, 2+1):
-    metronome_sounds.append(Sound(f"sounds/metronome/{i}.ogg"))
+    metronome_sounds.append(Sound(f"sounds/metronome/{i}.ogg", 1))
 
 bar_pos = 0
 old_bar_pos = 0
@@ -202,14 +201,38 @@ def paste():
     # print(temp_notes)
     patterns[str(cur_pattern)] += sel_notes
 
-def move(some_notes=[], one_note=None):
+def move(some_notes=[], one_note=None, movement=None):
     global move_x, move_y
     if some_notes == []:
         some_notes = [one_note]
+    if movement == None:
+        if int(move_x/nw) != int(mouse_x/nw):
+            # dir = sign(mouse_x-move_x)
+            dir = int(mouse_x/nw)-int(move_x/nw)
+            moveable = True
+            for some_note in some_notes:
+                # print(sel_note["pos"])
+                if not(32 > some_note["pos"] + dir >= 0):
+                    moveable = False
+                    break
+            if moveable:
+                for some_note in some_notes:
+                    some_note["pos"] += dir
+            move_x = mouse_x
 
-    if int(move_x/nw) != int(mouse_x/nw):
-        # dir = sign(mouse_x-move_x)
-        dir = int(mouse_x/nw)-int(move_x/nw)
+        if int(move_y/nw) != int(mouse_y/nw):
+            dir = int(mouse_y/nw)-int(move_y/nw)
+            moveable = True
+            for some_note in some_notes:
+                if not(48 > some_note["pitch"] - dir >= 0):
+                    moveable = False
+                    break
+            if moveable:
+                for some_note in some_notes:
+                    some_note["pitch"] -= dir
+            move_y = mouse_y
+    else:
+        dir = movement[0]
         moveable = True
         for some_note in some_notes:
             # print(sel_note["pos"])
@@ -221,8 +244,7 @@ def move(some_notes=[], one_note=None):
                 some_note["pos"] += dir
         move_x = mouse_x
 
-    if int(move_y/nw) != int(mouse_y/nw):
-        dir = int(mouse_y/nw)-int(move_y/nw)
+        dir = movement[1]
         moveable = True
         for some_note in some_notes:
             if not(48 > some_note["pitch"] - dir >= 0):
@@ -282,6 +304,17 @@ while True:
                 for sel_note in sel_notes:
                     if sel_note in patterns[str(cur_pattern)]:
                         patterns[str(cur_pattern)].remove(sel_note)
+
+            if shift:
+                if len(sel_notes) > 0:
+                    if event.key == pygame.K_UP:
+                        move(sel_notes, movement=[0, -1])
+                    elif event.key == pygame.K_DOWN:
+                        move(sel_notes, movement=[0, 1])
+                    elif event.key == pygame.K_RIGHT:
+                        move(sel_notes, movement=[1, 0])
+                    elif event.key == pygame.K_LEFT:
+                        move(sel_notes, movement=[-1, 0])
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             if pygame.mouse.get_pressed()[0]:
@@ -346,6 +379,9 @@ while True:
                     pat_rect = pygame.Rect(screen_width-150, 10, pat_text.get_width()+20, pat_text.get_height()+20)
             elif 24 > cur_offset+wheel >= 0:
                 cur_offset += wheel
+
+        if event.type == pygame.WINDOWMOVED:
+            playing = False
 
     screen.blit(div_layer, (0, (cur_offset-24)*nh))
     
@@ -462,7 +498,7 @@ while True:
         bar_rect = [bar_pos*screen_width/32, top_height, nw, screen_height-top_height]
         pygame.draw.rect(screen, "#ffcd75", bar_rect)
         if old_bar_pos != bar_pos:
-            for note in patterns[str(cur_pattern)]:
+            for i, note in enumerate(patterns[str(cur_pattern)]):
                 if note["pos"] == int(bar_pos):
                     play(note)
             old_bar_pos = bar_pos

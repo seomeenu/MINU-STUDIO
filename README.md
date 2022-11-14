@@ -21,6 +21,7 @@
 ## 할일
 - CTRL Z 기능
 - 셋잇단 그리드
+- 내보내기 기능
 
 ## 크레딧
 - 글꼴: [Galmuri7, Galmuri11-Bold](https://galmuri.quiple.dev/)

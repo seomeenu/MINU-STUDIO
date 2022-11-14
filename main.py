@@ -29,8 +29,9 @@ clock = pygame.time.Clock()
 bpm = 120
 patterns = {"0":[]}
 with open(filename) as file:
-    if file.read().strip == "":
-        data = json.load(file)
+    content = file.read()
+    if content.strip() != "":
+        data = json.loads(content)
         bpm = data["bpm"]
         patterns = data["patterns"]
 

@@ -115,6 +115,14 @@ note_names = [
 
 clipboard = []
 
+history = []
+
+def undo():
+    global patterns
+    if len(history) > 0:
+        patterns = copy.deepcopy(history[-1])
+        history.pop()
+
 def can_place_check(mouse_x=0, mouse_y=0, note=None):
     # new_note = Note(int(mouse_x/nw), int((mouse_y)/nh)-top_mult, cur_inst)
     new_note = note
@@ -141,7 +149,7 @@ div_layer = pygame.Surface((screen_width, screen_height*2))
 div_layer.set_colorkey("#000000")
 for i, name in enumerate(note_names):
     if not ("#" in name):
-        pygame.draw.rect(div_layer, "#f4f4f4", (0, top_height+i*nh, screen_width, nh))
+        pygame.draw.rect(div_layer, "#f4f4f4", (0, top_height+(48-i-1)*nh, screen_width, nh))
         
 for i in range(0, 32, 8):
     div_rect = [i*nw, top_height, nw/4, screen_height*2-top_height]
@@ -189,7 +197,11 @@ def note_to_rect(note):
 #         return -1
 #     return 0
 
+def action():
+    history.append(copy.deepcopy(patterns))
+
 def paste():
+    action()
     global sel_notes
     sel_notes = []
     for note in clipboard:
@@ -204,6 +216,7 @@ def paste():
     patterns[str(cur_pattern)] += sel_notes
 
 def move(some_notes=[], one_note=None, movement=None):
+    action()
     global move_x, move_y
     if some_notes == []:
         some_notes = [one_note]
@@ -297,12 +310,17 @@ while True:
                     paste()
                     
                 elif event.key == pygame.K_x:
+                    action()
                     clipboard = copy.deepcopy(sel_notes)
                     for sel_note in sel_notes:
                         if sel_note in patterns[str(cur_pattern)]:
                             patterns[str(cur_pattern)].remove(sel_note)
+                    
+                elif event.key == pygame.K_z:
+                    undo()
 
             if event.key == pygame.K_DELETE:
+                action()
                 for sel_note in sel_notes:
                     if sel_note in patterns[str(cur_pattern)]:
                         patterns[str(cur_pattern)].remove(sel_note)
@@ -352,14 +370,17 @@ while True:
                     if can_place:
                         if not playing:
                             play(new_note)
+                        action()
                         patterns[str(cur_pattern)].append(new_note)
 
             if pat_rect.collidepoint((mouse_x, mouse_y)):
                 if pygame.mouse.get_pressed()[0]:
                     cur_pattern += 1
                     patterns[str(cur_pattern)] = []
+                    action()
                 elif pygame.mouse.get_pressed()[2]:
                     if len(patterns) > 1:
+                        action()
                         patterns.popitem()
                         if cur_pattern == len(patterns):
                             cur_pattern -= 1
@@ -409,41 +430,10 @@ while True:
             pygame.draw.rect(screen, "#ffcd75", bar_rect)
 
         if len(sel_notes) > 0 and not ctrl and sel_move:
-            # moveable = False
-            # for sel_note in sel_notes:
-            #     if note_to_rect(sel_note).collidepoint(mouse_x, mouse_y):
-            #         moveable = True
-            # # print(sel_notes)
-            # print(moveable)
             move(sel_notes)
             hold_note = None
-            # if int(move_x/nw) != int(mouse_x/nw):
-            #     dir = sign(mouse_x-move_x)
-            #     moveable = True
-            #     for sel_note in sel_notes:
-            #         # print(sel_note["pos"])
-            #         if not(32 > sel_note["pos"] + dir >= 0):
-            #             moveable = False
-            #             break
-            #     if moveable:
-            #         for sel_note in sel_notes:
-            #             sel_note["pos"] += dir
-            #     move_x = mouse_x
-            # if int(move_y/nw) != int(mouse_y/nw):
-            #     dir = sign(mouse_y-move_y)
-            #     moveable = True
-            #     for sel_note in sel_notes:
-            #         if not(48 > sel_note["pitch"] - dir >= 0):
-            #             moveable = False
-            #             break
-            #     if moveable:
-            #         for sel_note in sel_notes:
-            #             sel_note["pitch"] -= dir
-            #     move_y = mouse_y
             
         elif hold_note != None:
-            # pygame.draw.circle(screen, "#000000", [mouse_x, mouse_y], 10)
-            # pygame.draw.circle(screen, "#000000", [move_x, move_y], 10)
             move(one_note=hold_note)
             sel_notes = []
                 
@@ -459,6 +449,7 @@ while True:
             can_place, remove_note = can_place_check(mouse_x, mouse_y)
             if not can_place:
                 if remove_note != None:
+                    action()
                     patterns[str(cur_pattern)].remove(remove_note)
 
     if cur_pattern < len(patterns):
@@ -525,7 +516,7 @@ while True:
 
     pygame.draw.rect(screen, "#ef7d57", [play_pos*nw, top_height-nh, nw, nh])
 
-    draw_text(f"MINU STUDIO", 20, 20, color="#a7f070", font=fontb)
+    draw_text("MINU STUDIO", 20, 20, color="#a7f070", font=fontb)
     draw_text(f"INST: {cur_inst+1}", 20, 50)
     draw_text(f"BPM: {bpm}", 120, 50)
 

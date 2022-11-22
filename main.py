@@ -10,11 +10,12 @@ import tkinter as tk
 from tkinter import filedialog
 
 root = tk.Tk()
-root.withdraw()
+root.geometry("0x0")
 
 filename = filedialog.askopenfilename(initialdir="")
 if filename.strip() == "":
     sys.exit()
+root.withdraw()
 
 pygame.init()
 pygame.mixer.init(size=32)
@@ -116,12 +117,17 @@ note_names = [
 clipboard = []
 
 history = []
+history_index = 0
 
-def undo():
-    global patterns
-    if len(history) > 0:
-        patterns = copy.deepcopy(history[-1])
-        history.pop()
+def do(add=-1):
+    global patterns, history_index
+    if add > 0:
+        if -(history_index+add) < 0:
+            return
+    # print(len(history), -(history_index-1))
+    if len(history) > -(history_index+add):
+        history_index += add
+        patterns = copy.deepcopy(history[history_index-1])
 
 def can_place_check(mouse_x=0, mouse_y=0, note=None):
     # new_note = Note(int(mouse_x/nw), int((mouse_y)/nh)-top_mult, cur_inst)
@@ -198,7 +204,12 @@ def note_to_rect(note):
 #     return 0
 
 def action():
+    global history, history_index
+    if history_index < 0:
+        history = history[:-1+history_index]
+    history_index = 0
     history.append(copy.deepcopy(patterns))
+    # print(history)
 
 def paste():
     action()
@@ -216,7 +227,7 @@ def paste():
     patterns[str(cur_pattern)] += sel_notes
 
 def move(some_notes=[], one_note=None, movement=None):
-    action()
+    # action()
     global move_x, move_y
     if some_notes == []:
         some_notes = [one_note]
@@ -270,6 +281,7 @@ def move(some_notes=[], one_note=None, movement=None):
                 some_note["pitch"] -= dir
         move_y = mouse_y
 
+action()
 while True:
     screen.fill("#333c57")
     mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -317,7 +329,10 @@ while True:
                             patterns[str(cur_pattern)].remove(sel_note)
                     
                 elif event.key == pygame.K_z:
-                    undo()
+                    do()
+                    
+                elif event.key == pygame.K_y:
+                    do(1)
 
             if event.key == pygame.K_DELETE:
                 action()
@@ -370,17 +385,17 @@ while True:
                     if can_place:
                         if not playing:
                             play(new_note)
-                        action()
+                        # action()
                         patterns[str(cur_pattern)].append(new_note)
 
             if pat_rect.collidepoint((mouse_x, mouse_y)):
                 if pygame.mouse.get_pressed()[0]:
                     cur_pattern += 1
                     patterns[str(cur_pattern)] = []
-                    action()
+                    # action()
                 elif pygame.mouse.get_pressed()[2]:
                     if len(patterns) > 1:
-                        action()
+                        # action()
                         patterns.popitem()
                         if cur_pattern == len(patterns):
                             cur_pattern -= 1
@@ -388,10 +403,14 @@ while True:
             if met_rect.collidepoint((mouse_x, mouse_y)):
                 if pygame.mouse.get_pressed()[0]:
                     metronome = not metronome
+            if mouse_y > top_height:
+                action()
         
         elif event.type == pygame.MOUSEBUTTONUP:
             hold_note = None
             # print(hold_note)
+            if len(sel_notes) > 0 and mouse_y > top_height:
+                action()
 
         if event.type == pygame.MOUSEWHEEL:
             wheel = event.y

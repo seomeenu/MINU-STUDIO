@@ -29,7 +29,7 @@
 - ~~CTRL Z 기능~~
 - 셋잇단 그리드
 - 내보내기 기능
-- 프로그램 내에서 BPM 바꾸기 기능
+- ~~프로그램 내에서 BPM 바꾸기 기능~~
 
 ## 크레딧
 - 글꼴: [Galmuri7, Galmuri11-Bold](https://galmuri.quiple.dev/)

@@ -27,7 +27,7 @@ pygame.display.set_caption("MINU STUDIO")
 
 clock = pygame.time.Clock()
 
-bpm = 120
+bpm = 120.0
 patterns = {"0":[]}
 with open(filename) as file:
     content = file.read()
@@ -169,6 +169,9 @@ pat_rect = pygame.Rect(screen_width-150, 10, pat_text.get_width()+20, pat_text.g
 met_text = draw_text(f"MET: -", 0, 0)
 met_rect = pygame.Rect(screen_width-260, 10, met_text.get_width()+20, met_text.get_height()+20)
 
+bpm_text = draw_text(f"BPM: {bpm}", 0, 0)
+bpm_rect = pygame.Rect(110, 40, bpm_text.get_width()+20, bpm_text.get_height()+20)
+
 ctrl = False
 sel_start_pos = [0, 0]
 sel_end_pos = [0, 0]
@@ -195,6 +198,33 @@ def play(note):
 
 def note_to_rect(note):
     return pygame.Rect([note["pos"] * nw, (24-note["pitch"]+top_mult+cur_offset) * nh, nw, nh])
+
+def bpm_input():
+    root = tk.Tk()
+    root.geometry("200x64")
+    root.minsize(200, 64)
+    root.maxsize(200, 64)
+    text = tk.Entry(root, font=("TkDefaultFont", 48))
+    text.insert(0, str(bpm))
+    text.pack()
+
+    def close():
+        root.destroy()
+        root.quit()
+
+    def set_bpm(event):
+        global bpm, bpm_rect
+        try:
+            bpm = float(text.get())
+            bpm_text = draw_text(f"BPM: {bpm}", 0, 0)
+            bpm_rect = pygame.Rect(110, 40, bpm_text.get_width()+20, bpm_text.get_height()+20)
+            close()
+        except ValueError:
+            pass
+
+    root.protocol("WM_DELETE_WINDOW", close)
+    root.bind('<Return>', set_bpm)
+    root.mainloop()
 
 # def sign(num):
 #     if num > 0:
@@ -403,6 +433,11 @@ while True:
             if met_rect.collidepoint((mouse_x, mouse_y)):
                 if pygame.mouse.get_pressed()[0]:
                     metronome = not metronome
+
+            if bpm_rect.collidepoint((mouse_x, mouse_y)):
+                if pygame.mouse.get_pressed()[0]:
+                    bpm_input()
+
             if mouse_y > top_height:
                 action()
         
@@ -537,7 +572,6 @@ while True:
 
     draw_text("MINU STUDIO", 20, 20, color="#a7f070", font=fontb)
     draw_text(f"INST: {cur_inst+1}", 20, 50)
-    draw_text(f"BPM: {bpm}", 120, 50)
 
     if metronome:
         draw_text("MET: O", screen_width-250, 20)
@@ -545,6 +579,10 @@ while True:
         draw_text("MET: -", screen_width-250, 20)
     if met_rect.collidepoint((mouse_x, mouse_y)):
         pygame.draw.rect(screen, "#333c57", met_rect, 5)
+
+    draw_text(f"BPM: {bpm}", 120, 50)
+    if bpm_rect.collidepoint((mouse_x, mouse_y)):
+        pygame.draw.rect(screen, "#333c57", bpm_rect, 5)
 
     draw_text(f"PAT: {cur_pattern}", screen_width-140, 20)
     if pat_rect.collidepoint((mouse_x, mouse_y)):
